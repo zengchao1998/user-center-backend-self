@@ -11,14 +11,25 @@ spring:
     username: root
     password: zengchao
 
+  # 配置session 超时时间(7days)
+  session:
+    timeout: 604800
+
 # 配置Mybatis
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
-      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
   type-aliases-package: com.wut.self.pojo
+
+# 指定接口全局路径前缀
+server:
+  servlet:
+    context-path: /api
 
 
 
