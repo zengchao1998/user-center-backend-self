@@ -26,10 +26,12 @@ mybatis-plus:
       logic-not-delete-value: 0
   type-aliases-package: com.wut.self.pojo
 
-# 指定接口全局路径前缀
 server:
+  # 指定接口全局路径前缀
   servlet:
     context-path: /api
+  # 指定服务器端口
+  port: 8080
 
 
 

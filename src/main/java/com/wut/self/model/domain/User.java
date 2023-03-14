@@ -7,7 +7,7 @@ import java.util.Date;
 import lombok.Data;
 
 /**
- * 
+ *
  * @TableName user
  */
 @TableName(value ="user")
@@ -76,9 +76,14 @@ public class User implements Serializable {
     private Integer isDeleted;
 
     /**
-     * 用户角色
+     * 0-普通用户; 1-管理员; 2-vip用户
      */
     private Integer userRole;
+
+    /**
+     * 用户校验码
+     */
+    private String validateCode;
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;

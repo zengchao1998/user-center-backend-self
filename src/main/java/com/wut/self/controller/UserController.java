@@ -5,7 +5,6 @@ import com.wut.self.model.domain.User;
 import com.wut.self.model.request.UserLoginRequestParams;
 import com.wut.self.model.request.UserRegisterRequestParams;
 import com.wut.self.service.UserService;
-import com.wut.self.service.impl.UserServiceImpl;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,6 +28,9 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    /**
+     * 用户注册接口
+     */
     @PostMapping("/register")
     public Long userRegister(@RequestBody UserRegisterRequestParams requestParams) {
         if(requestParams == null) {
@@ -37,12 +39,16 @@ public class UserController {
         String userAccount = requestParams.getUserAccount();
         String userPassword = requestParams.getUserPassword();
         String checkPassword = requestParams.getCheckPassword();
-        if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
+        String validateCode = requestParams.getValidateCode();
+        if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, validateCode)) {
             return null;
         }
-        return userService.userRegister(userAccount, userPassword, checkPassword);
+        return userService.userRegister(userAccount, userPassword, checkPassword, validateCode);
     }
 
+    /**
+     * 用户登录接口
+     */
     @PostMapping("/login")
     public User userLogin(@RequestBody UserLoginRequestParams requestParams, HttpServletRequest req) {
         if(requestParams == null) {
@@ -56,8 +62,39 @@ public class UserController {
         return userService.userLogin(userAccount, userPassword, req);
     }
 
+    /**
+     * 用户注销接口
+     */
+    @PostMapping("/logout")
+    public Integer logoutUser(HttpServletRequest req) {
+        if(req == null) {
+            return null;
+        }
+        return userService.userLogout(req);
+    }
+
+    /**
+     * 获取当前用户登录态接口
+     */
+    @GetMapping("/current")
+    public User getCurrentUser(HttpServletRequest req) {
+        Object userObj = req.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        if(userObj == null) {
+            return null;
+        }
+        // 对于频繁变换的信息，可以考虑不直接从缓存中去，而是去查询数据库
+        Long userId = currentUser.getId();
+        // todo：如果用户状态异常，需要进行逻辑判断
+        User newCurrentUser = userService.getById(userId);
+        return userService.getSafetyUser(newCurrentUser);
+    }
+
+    /**
+     * 查询用户接口
+     */
     @GetMapping("/search")
-    public List<User> searchUser(String username, HttpServletRequest req) {
+    public List<User> searchUsers(String username, HttpServletRequest req) {
         // 1. 鉴权，仅管理员可调用
         if(!isAdmin(req)) {
             return new ArrayList<>();
@@ -73,6 +110,9 @@ public class UserController {
         return userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
     }
 
+    /**
+     * 删除用户接口
+     */
     @PostMapping ("/delete")
     public boolean deleteUser(Long id, HttpServletRequest req) {
         // 鉴权，仅管理员可调用

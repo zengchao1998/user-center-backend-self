@@ -1,5 +1,4 @@
 package com.wut.self.service.impl;
-import java.util.Date;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -38,10 +37,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     private static final String SALT = "center";
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(String userAccount, String userPassword, String checkPassword, String validateCode) {
 
         // 1. 用户注册信息校验
-        if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)){
+        if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, validateCode)){
             // todo 修改为自定义异常
             return -1;
         }
@@ -49,6 +48,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             return -1;
         }
         if(userPassword.length() < 8) {
+            return -1;
+        }
+        if(validateCode.length() > 5) {
             return -1;
         }
         // 账户不能包含特殊字符
@@ -61,10 +63,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if(!StringUtils.equals(userPassword, checkPassword)){
             return -1;
         }
+
         // 账户不能重复
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         userQueryWrapper.eq("user_account", userAccount);
         long count = userMapper.selectCount(userQueryWrapper);
+        if(count > 0) {
+            return -1;
+        }
+
+        // 用户验证码不能重复
+        userQueryWrapper = new QueryWrapper<>();
+        userQueryWrapper.eq("validate_code", validateCode);
+        count = userMapper.selectCount(userQueryWrapper);
         if(count > 0) {
             return -1;
         }
@@ -76,6 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User user = new User();
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
+        user.setValidateCode(validateCode);
         int saveResult = userMapper.insert(user);
         if(saveResult != 1) {
             return -1;
@@ -126,6 +138,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return safetyUser;
     }
 
+    @Override
+    public Integer userLogout(HttpServletRequest req) {
+        req.getSession().removeAttribute(USER_LOGIN_STATE);
+        return 1;
+    }
+
     /**
      * 用户信息脱敏
      * @param currentUser 当前用户
@@ -133,6 +151,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public User getSafetyUser(User currentUser) {
+        if(currentUser == null) {
+            return null;
+        }
         User safetyUser = new User();
         safetyUser.setId(currentUser.getId());
         safetyUser.setUsername(currentUser.getUsername());
@@ -144,6 +165,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setUserStatus(currentUser.getUserStatus());
         safetyUser.setCreateTime(currentUser.getCreateTime());
         safetyUser.setUserRole(currentUser.getUserRole());
+        safetyUser.setValidateCode(currentUser.getValidateCode());
         return safetyUser;
     }
 }

@@ -24,4 +24,8 @@ public class UserRegisterRequestParams implements Serializable {
      * 校验密码
      */
     private String checkPassword;
+    /**
+     * 用户验证码
+     */
+    private String validateCode;
 }
