@@ -20,4 +20,9 @@ public interface UserConstant {
      * 管理员权限
      */
     int ADMIN_ROLE = 1;
+
+    /**
+     * 用户默认头像
+     */
+    String USER_AVATAR_DEFAULT_URL = "https://typora-myself.oss-cn-hangzhou.aliyuncs.com/typora_img/Project--测试用头像.jpg";
 }

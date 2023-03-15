@@ -1,10 +1,14 @@
 package com.wut.self.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.wut.self.common.BaseResponse;
+import com.wut.self.common.ErrorCode;
+import com.wut.self.exception.BusinessException;
 import com.wut.self.model.domain.User;
 import com.wut.self.model.request.UserLoginRequestParams;
 import com.wut.self.model.request.UserRegisterRequestParams;
 import com.wut.self.service.UserService;
+import com.wut.self.utils.ResultUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,97 +36,102 @@ public class UserController {
      * 用户注册接口
      */
     @PostMapping("/register")
-    public Long userRegister(@RequestBody UserRegisterRequestParams requestParams) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequestParams requestParams) {
         if(requestParams == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
         String userAccount = requestParams.getUserAccount();
         String userPassword = requestParams.getUserPassword();
         String checkPassword = requestParams.getCheckPassword();
         String validateCode = requestParams.getValidateCode();
         if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, validateCode)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数不完整");
         }
-        return userService.userRegister(userAccount, userPassword, checkPassword, validateCode);
+        long result = userService.userRegister(userAccount, userPassword, checkPassword, validateCode);
+        return ResultUtils.success(result);
     }
 
     /**
      * 用户登录接口
      */
     @PostMapping("/login")
-    public User userLogin(@RequestBody UserLoginRequestParams requestParams, HttpServletRequest req) {
+    public BaseResponse<User> userLogin(@RequestBody UserLoginRequestParams requestParams, HttpServletRequest req) {
         if(requestParams == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
         String userAccount = requestParams.getUserAccount();
         String userPassword = requestParams.getUserPassword();
         if(StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数不完整");
         }
-        return userService.userLogin(userAccount, userPassword, req);
+        User user = userService.userLogin(userAccount, userPassword, req);
+        return ResultUtils.success(user);
     }
 
     /**
      * 用户注销接口
      */
     @PostMapping("/logout")
-    public Integer logoutUser(HttpServletRequest req) {
+    public BaseResponse<Integer> logoutUser(HttpServletRequest req) {
         if(req == null) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
         }
-        return userService.userLogout(req);
+        Integer result = userService.userLogout(req);
+        return ResultUtils.success(result);
     }
 
     /**
      * 获取当前用户登录态接口
      */
     @GetMapping("/current")
-    public User getCurrentUser(HttpServletRequest req) {
+    public BaseResponse<User> getCurrentUser(HttpServletRequest req) {
         Object userObj = req.getSession().getAttribute(USER_LOGIN_STATE);
         User currentUser = (User) userObj;
         if(userObj == null) {
-            return null;
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "当前用户未登录");
         }
         // 对于频繁变换的信息，可以考虑不直接从缓存中去，而是去查询数据库
         Long userId = currentUser.getId();
-        // todo：如果用户状态异常，需要进行逻辑判断
         User newCurrentUser = userService.getById(userId);
-        return userService.getSafetyUser(newCurrentUser);
+        // todo：如果用户状态异常，需要进行逻辑判断
+        User safetyUser = userService.getSafetyUser(newCurrentUser);
+        return ResultUtils.success(safetyUser);
     }
 
     /**
      * 查询用户接口
      */
     @GetMapping("/search")
-    public List<User> searchUsers(String username, HttpServletRequest req) {
+    public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest req) {
         // 1. 鉴权，仅管理员可调用
         if(!isAdmin(req)) {
-            return new ArrayList<>();
+            throw new BusinessException(ErrorCode.NO_AUTH, "当前用户权限不足");
         }
         // 2. 执行查询
         QueryWrapper<User> userQueryWrapper = new QueryWrapper<>();
         if(StringUtils.isNotBlank(username)) {
             userQueryWrapper.like("username", username);
-
         }
         List<User> userList = userService.list(userQueryWrapper);
         // 3. 用户信息过滤
-        return userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        List<User> list = userList.stream().map(user -> userService.getSafetyUser(user)).collect(Collectors.toList());
+        return ResultUtils.success(list);
     }
 
     /**
      * 删除用户接口
      */
     @PostMapping ("/delete")
-    public boolean deleteUser(Long id, HttpServletRequest req) {
+    public BaseResponse<Boolean> deleteUser(Long id, HttpServletRequest req) {
         // 鉴权，仅管理员可调用
         if(!isAdmin(req)) {
-            return false;
+            throw new BusinessException(ErrorCode.NO_AUTH, "当前用户权限不足");
         }
         if(id == null || id <= 0) {
-            return false;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户id输入错误");
         }
-        return userService.removeById(id);
+        boolean result = userService.removeById(id);
+        return ResultUtils.success(result);
     }
 
     /**

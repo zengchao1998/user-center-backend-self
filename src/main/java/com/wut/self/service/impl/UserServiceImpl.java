@@ -2,6 +2,8 @@ package com.wut.self.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.wut.self.common.ErrorCode;
+import com.wut.self.exception.BusinessException;
 import com.wut.self.service.UserService;
 import com.wut.self.model.domain.User;
 import com.wut.self.mapper.UserMapper;
@@ -16,6 +18,7 @@ import javax.servlet.http.HttpSession;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.wut.self.constant.UserConstant.USER_AVATAR_DEFAULT_URL;
 import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
@@ -41,27 +44,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         // 1. 用户注册信息校验
         if(StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, validateCode)){
-            // todo 修改为自定义异常
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if(userAccount.length() < 4) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名长度过短");
         }
         if(userPassword.length() < 8) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户名长度过长");
         }
         if(validateCode.length() > 5) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户验证码长度不符合要求");
         }
         // 账户不能包含特殊字符
         String validateStr = "^[a-zA-Z][\\w_]{3,}$";
         Matcher matcher = Pattern.compile(validateStr).matcher(userAccount);
         if(!matcher.find()) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号包含特殊字符");
         }
         // 密码和校验密码相同
         if(!StringUtils.equals(userPassword, checkPassword)){
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次密码输入不一致");
         }
 
         // 账户不能重复
@@ -69,7 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userQueryWrapper.eq("user_account", userAccount);
         long count = userMapper.selectCount(userQueryWrapper);
         if(count > 0) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账户名重复");
         }
 
         // 用户验证码不能重复
@@ -77,7 +79,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         userQueryWrapper.eq("validate_code", validateCode);
         count = userMapper.selectCount(userQueryWrapper);
         if(count > 0) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户验证码重复");
         }
 
         // 2. 对密码进行加密
@@ -88,9 +90,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserAccount(userAccount);
         user.setUserPassword(encryptPassword);
         user.setValidateCode(validateCode);
+        user.setAvatarUrl(USER_AVATAR_DEFAULT_URL);
         int saveResult = userMapper.insert(user);
         if(saveResult != 1) {
-            return -1;
+            throw new BusinessException(ErrorCode.EXECUTE_FAIL, "用户注册失败");
         }
         return user.getId();
     }
@@ -100,20 +103,19 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         // 1. 用户登录信息校验
         if(StringUtils.isAnyBlank(userAccount, userPassword)){
-            // todo 修改为自定义异常
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码为空");
         }
         if(userAccount.length() < 4) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度过短");
         }
         if(userPassword.length() < 8) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度过短");
         }
         // 账户不能包含特殊字符
         String validateStr = "^[a-zA-Z][\\w_]{3,}$";
         Matcher matcher = Pattern.compile(validateStr).matcher(userAccount);
         if(!matcher.find()) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号内包含特殊字符");
         }
 
         // 2. 校验密码
@@ -125,7 +127,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if(currentUser == null) {
             log.info("user login failed, the userAccount cannot match userPassword");
-            return null;
+            throw new BusinessException(ErrorCode.EXECUTE_FAIL, "登录失败");
         }
         // 可以补充内容: 登录限流 ....
 
