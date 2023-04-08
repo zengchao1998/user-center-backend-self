@@ -127,7 +127,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 用户不存在
         if(currentUser == null) {
             log.info("user login failed, the userAccount cannot match userPassword");
-            throw new BusinessException(ErrorCode.EXECUTE_FAIL, "登录失败");
+            throw new BusinessException(ErrorCode.EXECUTE_FAIL, "登录失败,用户不存在");
         }
         // 可以补充内容: 登录限流 ....
 

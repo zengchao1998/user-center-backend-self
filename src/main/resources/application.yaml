@@ -1,5 +1,10 @@
-# 项目名称
 spring:
+
+  # 指定本地运行环境
+  profiles:
+    active: prod
+
+  # 项目名称
   application:
     name: user-center
 
