@@ -3,6 +3,10 @@ package com.wut.self.service;
 import com.wut.self.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+
+import static com.wut.self.constant.UserConstant.ADMIN_ROLE;
+import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
 * @author zeng
@@ -43,5 +47,41 @@ public interface UserService extends IService<User> {
      * @return 脱敏后的用户
      */
     User getSafetyUser(User currentUser);
+
+    /**
+     * 根据标签查询用户 MEMORY
+     * @param tagNameList 标签列表
+     * @return 标签用户
+     */
+    List<User> searchUsersByTags(List<String> tagNameList);
+
+    /**
+     * 更新用户信息
+     * @param user 修改的用户信息
+     * @param loginUser 当前登录用户
+     * @return 是否成功 0,1
+     */
+    int updateUser(User user, User loginUser);
+
+    /**
+     * 获取当前登录用户信息
+     * @param req 请求对象
+     * @return 用户对象
+     */
+    User getLoginUser(HttpServletRequest req);
+
+    /**
+     * 是否为管理员
+     * @param req 请求对象
+     * @return 判断结果 true：admin
+     */
+    boolean isAdmin(HttpServletRequest req);
+
+    /**
+     * 是否为管理员
+     * @param loginUser 登录用户
+     * @return 判断结果 true：admin
+     */
+    boolean isAdmin(User loginUser);
 }
 

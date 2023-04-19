@@ -14,5 +14,7 @@ create table user
     update_time   datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间',
     is_deleted    tinyint  default 0                 not null comment '是否删除',
     user_role     int      default 0                 not null comment '0-普通用户; 1-管理员; 2-vip用户',
-    validate_code varchar(256)                       null comment '用户校验码'
-) CHARSET utf8 COLLATE utf8_bin ENGINE INNODB;
+    validate_code varchar(256)                       null comment '用户校验码',
+    tags          varchar(1024)                      null comment '标签列表 json',
+    user_profile  varchar(512)                       null comment '个人简介'
+) character set utf8 engine innodb;

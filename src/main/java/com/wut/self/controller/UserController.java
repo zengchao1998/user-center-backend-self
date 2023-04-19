@@ -16,6 +16,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import static com.wut.self.constant.UserConstant.ADMIN_ROLE;
@@ -27,6 +29,7 @@ import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
  */
 @RestController
 @RequestMapping("/user")
+@CrossOrigin(origins = {"http://127.0.0.1:5173"})
 public class UserController {
 
     @Resource
@@ -104,7 +107,7 @@ public class UserController {
     @GetMapping("/search")
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest req) {
         // 1. 鉴权，仅管理员可调用
-        if(!isAdmin(req)) {
+        if(!userService.isAdmin(req)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "当前用户权限不足");
         }
         // 2. 执行查询
@@ -124,7 +127,7 @@ public class UserController {
     @PostMapping ("/delete")
     public BaseResponse<Boolean> deleteUser(Long id, HttpServletRequest req) {
         // 鉴权，仅管理员可调用
-        if(!isAdmin(req)) {
+        if(!userService.isAdmin(req)) {
             throw new BusinessException(ErrorCode.NO_AUTH, "当前用户权限不足");
         }
         if(id == null || id <= 0) {
@@ -134,15 +137,23 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
-    /**
-     * 是否为管理员
-     * @param req 请求对象
-     * @return 判断结果 true：admin
-     */
-    private boolean isAdmin(HttpServletRequest req) {
-        // 鉴权，仅管理员可调用
-        Object userObj = req.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null && user.getUserRole() == ADMIN_ROLE;
+    @GetMapping("/search/tags")
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagsNameList) {
+        if(tagsNameList == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        List<User> userList = userService.searchUsersByTags(tagsNameList);
+        return ResultUtils.success(userList);
+    }
+
+    @PostMapping("/update")
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest req) {
+        // 校验参数是否为空
+        if(user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        User loginUser = userService.getLoginUser(req);
+        Integer res = userService.updateUser(user, loginUser);
+        return ResultUtils.success(res);
     }
 }

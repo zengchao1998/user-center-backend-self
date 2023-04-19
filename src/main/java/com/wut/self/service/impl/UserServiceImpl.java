@@ -2,6 +2,8 @@ package com.wut.self.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.wut.self.common.ErrorCode;
 import com.wut.self.exception.BusinessException;
 import com.wut.self.service.UserService;
@@ -10,21 +12,23 @@ import com.wut.self.mapper.UserMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
-import static com.wut.self.constant.UserConstant.USER_AVATAR_DEFAULT_URL;
-import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
+import static com.wut.self.constant.UserConstant.*;
 
 /**
 * @author zeng
-* @description 针对表【user】的数据库操作Service实现
-* @createDate 2023-03-13 09:56:46
+* description 针对表【user】的数据库操作Service实现
+* createDate 2023-03-13 09:56:46
 */
 @Service
 @Slf4j
@@ -168,7 +172,102 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         safetyUser.setCreateTime(currentUser.getCreateTime());
         safetyUser.setUserRole(currentUser.getUserRole());
         safetyUser.setValidateCode(currentUser.getValidateCode());
+        safetyUser.setTags(currentUser.getTags());
+        safetyUser.setUserProfile(currentUser.getUserProfile());
         return safetyUser;
+    }
+
+    @Override
+    public List<User> searchUsersByTags(List<String> tagNameList) {
+        if(CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        
+        /* 内存查询 */
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        List<User> users = userMapper.selectList(queryWrapper);
+        Gson gson = new Gson();
+        return users.stream().filter(user -> {
+            String tags = user.getTags();
+            if(StringUtils.isBlank(tags)){
+                return false;
+            }
+            // json 中存放的是 String
+            Set<String> tempTagNameList = gson.fromJson(tags, new TypeToken<Set<String>>() {}.getType());
+            tempTagNameList = Optional.ofNullable(tempTagNameList).orElse(new HashSet<>());
+            for (String tagName : tagNameList) {
+                if (!tempTagNameList.contains(tagName)) {
+                    return false;
+                }
+            }
+            return true;
+        }).map(this::getSafetyUser).collect(Collectors.toList());
+    }
+
+    @Override
+    public int updateUser(User user, User loginUser) {
+        // 查询是否传入用户id
+        Long userId = user.getId();
+        if(userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 判断是否为管理员,或者登录用户修改的是自己的信息
+        if(!isAdmin(loginUser) && !userId.equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if(oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        return userMapper.updateById(user);
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest req) {
+        if(req == null) {
+            return null;
+        }
+        User user = (User) req.getSession().getAttribute(USER_LOGIN_STATE);
+        if(user == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN, "当前用户未登录");
+        }
+        return user;
+    }
+
+    @Override
+    public boolean isAdmin(HttpServletRequest req) {
+        if(req == null) {
+            return false;
+        }
+        // 鉴权，仅管理员可调用
+        Object userObj = req.getSession().getAttribute(USER_LOGIN_STATE);
+        User user = (User) userObj;
+        return user != null && user.getUserRole() == ADMIN_ROLE;
+    }
+
+    @Override
+    public boolean isAdmin(User loginUser) {
+        return loginUser != null && loginUser.getUserRole() == ADMIN_ROLE;
+    }
+
+    /**
+     * 根据标签查询用户 SQL
+     * @param tagNameList 标签列表
+     * @return 标签用户
+     */
+    @Deprecated
+    protected List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
+        if(CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        /* SQL 查询 */
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        for (String tagName : tagNameList) {
+            queryWrapper = queryWrapper.like("tags", tagName);
+        }
+        List<User> userList = userMapper.selectList(queryWrapper);
+
+        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
     }
 }
 

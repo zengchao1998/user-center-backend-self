@@ -5,6 +5,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import javax.annotation.Resource;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,5 +45,12 @@ class UserServiceTest {
         if(matcher.find()) {
             System.out.println(matcher.group(0));
         }
+    }
+
+    @Test
+    void testSearchUsersByTags() {
+        List<String> tagNameList = Arrays.asList("java", "python");
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        Assertions.assertNotNull(userList);
     }
 }
