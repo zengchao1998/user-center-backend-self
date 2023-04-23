@@ -1,6 +1,7 @@
 package com.wut.self.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wut.self.common.BaseResponse;
 import com.wut.self.common.ErrorCode;
 import com.wut.self.exception.BusinessException;
@@ -9,19 +10,19 @@ import com.wut.self.model.request.UserLoginRequestParams;
 import com.wut.self.model.request.UserRegisterRequestParams;
 import com.wut.self.service.UserService;
 import com.wut.self.utils.ResultUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.wut.self.constant.UserConstant.ADMIN_ROLE;
-import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
+import static com.wut.self.constant.UserConstant.*;
 
 /**
  * Author: zeng
@@ -29,11 +30,15 @@ import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
  */
 @RestController
 @RequestMapping("/user")
-@CrossOrigin(origins = {"http://127.0.0.1:5173"})
+@CrossOrigin(origins = {"http://127.0.0.1:5173"}, allowCredentials = "true")
+@Slf4j
 public class UserController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
 
     /**
      * 用户注册接口
@@ -155,5 +160,14 @@ public class UserController {
         User loginUser = userService.getLoginUser(req);
         Integer res = userService.updateUser(user, loginUser);
         return ResultUtils.success(res);
+    }
+
+    @GetMapping("/recommend")
+    public BaseResponse<Page<User>> recommendUsers(long pageNum, long pageSize, HttpServletRequest req) {
+        // 1. 获取登录用户
+        User loginUser = userService.getLoginUser(req);
+        // 2. 根据登录用户推荐
+        Page<User> recommendUsers = userService.getRecommendUsers(pageNum, pageSize, loginUser);
+        return ResultUtils.success(recommendUsers);
     }
 }

@@ -1,5 +1,6 @@
 package com.wut.self.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wut.self.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import javax.servlet.http.HttpServletRequest;
@@ -83,5 +84,14 @@ public interface UserService extends IService<User> {
      * @return 判断结果 true：admin
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 为当前登录用户，推荐相似用户
+     * @param pageNum 页码
+     * @param pageSize 每页显示的个数
+     * @param loginUser 登录用户
+     * @return Page<User>
+     */
+    Page<User> getRecommendUsers(long pageNum, long pageSize, User loginUser);
 }
 
