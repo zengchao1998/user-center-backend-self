@@ -1,24 +1,14 @@
 package com.wut.self.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wut.self.model.domain.User;
-import com.wut.self.utils.ResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.core.ValueOperations;
 
 import javax.annotation.Resource;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.wut.self.constant.UserConstant.REDIS_KEY_PREFIX;
 
 /**
  * Author: zeng
@@ -31,8 +21,6 @@ class UserServiceTest {
     @Resource
     private UserService userService;
 
-    @Resource
-    private RedisTemplate<String, Object> redisTemplate;
 
     @Test
     void testAddUser() {
@@ -59,12 +47,5 @@ class UserServiceTest {
         if(matcher.find()) {
             System.out.println(matcher.group(0));
         }
-    }
-
-    @Test
-    void testSearchUsersByTags() {
-        List<String> tagNameList = Arrays.asList("java", "python");
-        List<User> userList = userService.searchUsersByTags(tagNameList);
-        Assertions.assertNotNull(userList);
     }
 }

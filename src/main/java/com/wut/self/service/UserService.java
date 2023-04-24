@@ -1,18 +1,14 @@
 package com.wut.self.service;
 
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wut.self.model.domain.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
-import static com.wut.self.constant.UserConstant.ADMIN_ROLE;
-import static com.wut.self.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
 * @author zeng
-* @description 针对表【user】的数据库操作Service
-* @createDate 2023-03-13 09:56:46
+* description 针对表【user】的数据库操作Service
+* createDate 2023-03-13 09:56:46
 */
 public interface UserService extends IService<User> {
     /**
@@ -50,13 +46,6 @@ public interface UserService extends IService<User> {
     User getSafetyUser(User currentUser);
 
     /**
-     * 根据标签查询用户 MEMORY
-     * @param tagNameList 标签列表
-     * @return 标签用户
-     */
-    List<User> searchUsersByTags(List<String> tagNameList);
-
-    /**
      * 更新用户信息
      * @param user 修改的用户信息
      * @param loginUser 当前登录用户
@@ -84,14 +73,5 @@ public interface UserService extends IService<User> {
      * @return 判断结果 true：admin
      */
     boolean isAdmin(User loginUser);
-
-    /**
-     * 为当前登录用户，推荐相似用户
-     * @param pageNum 页码
-     * @param pageSize 每页显示的个数
-     * @param loginUser 登录用户
-     * @return Page<User>
-     */
-    Page<User> getRecommendUsers(long pageNum, long pageSize, User loginUser);
 }
 

@@ -85,16 +85,6 @@ public class User implements Serializable {
      */
     private String validateCode;
 
-    /**
-     * 用户标签
-     */
-    private String tags;
-
-    /**
-     * 用户个人简介
-     */
-    private String userProfile;
-
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

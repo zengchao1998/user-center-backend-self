@@ -25,9 +25,4 @@ public interface UserConstant {
      * 用户默认头像
      */
     String USER_AVATAR_DEFAULT_URL = "https://typora-myself.oss-cn-hangzhou.aliyuncs.com/typora_img/Project--测试用头像.jpg";
-
-    /**
-     * redis 缓存key前缀
-     */
-    String REDIS_KEY_PREFIX = "link_partner:user:recommend:%s";
 }
